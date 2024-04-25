@@ -3,11 +3,15 @@ Code for my Master thesis in Political Science with focus on Computational Socia
 
 ## Usage
 It is recommended to build your own Docker-Image to use the model. Clone the repo and build the image using the following command:
-''
+
+```
 docker build -t dlContainer . 
-''
+```
+
 Then run the container using:
-``
+
+```
 docker run dlContainer
-``
+```
+
 Do not forget to configure Docker to use your Nvidia GPU.
