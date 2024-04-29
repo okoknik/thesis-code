@@ -5,13 +5,14 @@ Code for my Master thesis in Political Science with focus on Computational Socia
 It is recommended to build your own Docker-Image to use the model. Clone the repo and build the image using the following command:
 
 ```
-docker build -t dlContainer . 
+cd thesis-code
+docker build -t dlcontainer . 
 ```
 
 Then run the container using:
 
 ```
-docker run dlContainer
+docker run -it --rm --name adalora -v "$(pwd)":/app --gpus all dlcontainer
 ```
 
 Do not forget to configure Docker to use your Nvidia GPU.
