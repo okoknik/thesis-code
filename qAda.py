@@ -1,30 +1,20 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-#from collections import defaultdict
 import pickle
 import json
 import os
 from os.path import exists, join, isdir
 from dataclasses import dataclass, field
-#import sys
 from typing import (
     Optional,
     Dict,
-  #  Sequence,
-    Any,
- #   Union,
-    List
 )
 import numpy as np
 from tqdm import tqdm
 import logging
 import bitsandbytes as bnb
 import pandas as pd
-#import importlib
-#from packaging import version
-#from packaging.version import parse
-
 import torch
 import transformers
 from torch.nn.utils.rnn import pad_sequence
@@ -53,7 +43,6 @@ from sklearn.metrics import (
     f1_score,
     precision_score,
     recall_score,
-    roc_auc_score
 )
 
 from peft import (
@@ -206,14 +195,14 @@ class DataArguments:
         default=1024, metadata={"help": "Size of validation dataset."}
     )
     max_train_samples: Optional[int] = field(
-        default=10000,#106567, #=112175 - (0.5*112175)
+        default=10000,
         metadata={
             "help": "For debugging purposes or quicker training, truncate the number of training examples to this "
             "value if set."
         },
     )
     max_eval_samples: Optional[int] = field(
-        default=None, #0.5*112175
+        default=None,
         metadata={
             "help": "For debugging purposes or quicker training, truncate the number of evaluation examples to this "
             "value if set."
@@ -280,10 +269,9 @@ class TrainingArguments(transformers.TrainingArguments):
     output_dir: str = field(default='./output_cls', metadata={"help": 'The output dir for logs and checkpoints'})
     optim: str = field(default='adamw_8bit', metadata={"help": 'The optimizer to be used'})
     per_device_train_batch_size: int = field(default=8, metadata={"help": 'The training batch size per GPU. Increase for better speed.'})
-    #per_device_eval_batch_size: int = field(default=24, metadata={"help":'The evaluation/prediction batch sizer per GPU. Change if out of memory in evaluation/prediction.'})
     gradient_accumulation_steps: int = field(default=16, metadata={"help": 'How many gradients to accumulate before to perform an optimizer step'})
     max_steps: int = field(default=10543, metadata={"help": 'How many optimizer update steps to take.'})
-    weight_decay: float = field(default=0.0, metadata={"help": 'The L2 weight decay rate of AdamW'}) # use lora dropout instead for regularization if needed
+    weight_decay: float = field(default=0.0, metadata={"help": 'The L2 weight decay rate of AdamW'}) 
     learning_rate: float = field(default=0.0002, metadata={"help": 'The learnign rate'})
     remove_unused_columns: bool = field(default=False, metadata={"help": 'Removed unused columns. Needed to make this codebase work.'})
     max_grad_norm: float = field(default=0.3, metadata={"help": 'Gradient clipping max norm. This is tuned and works well for all models tested.'})
@@ -319,7 +307,6 @@ class CustomTrainer(Trainer):
         loss_fct = torch.nn.CrossEntropyLoss(weight=class_weights)
         logits = outputs["logits"] #if isinstance(outputs, dict) else outputs[0]
         
-        # We don't use .loss here since the model may return tuples instead of ModelOutput.
         loss = loss_fct(logits.view(-1,110), labels.view(-1))
         return (loss, outputs) if return_outputs else loss
 
@@ -637,9 +624,6 @@ def train():
     # Training
     if args.do_train:
         logging.info("*** Train ***")
-        # Note: `resume_from_checkpoint` not supported for adapter checkpoints by HF.
-        # Currently adapter checkpoint is reloaded as expected but optimizer/scheduler states are not.
-        # Edit: https://github.com/huggingface/peft/issues/859
        
         if completed_training:
             train_result = trainer.train(resume_from_checkpoint=checkpoint_dir)
@@ -667,12 +651,8 @@ def train():
         prediction_output = trainer.predict(test_dataset=data_module['predict_dataset'],metric_key_prefix="predict")
         prediction_metrics = prediction_output.metrics
         predictions = prediction_output.predictions
-        #print(predictions)
         predictions = torch.Tensor(predictions)
         probabilities = torch.softmax(predictions, dim=1).tolist()#[0]
-        #print("softmax",probabilities)
-        #probabilities = {model.config.id2label[index]: round(probability * 100, 2) for index, probability in enumerate(probabilities)}
-        #print(probabilities)
         codes = []
         probs = []
         print("Creating code and probabilities df.")
@@ -681,16 +661,6 @@ def train():
             result = dict(sorted(result.items(), key=lambda item: item[1], reverse=True))
             codes.append(list(result.items())[0][0])
             probs.append(list(result.items())[0][1])
-        #print("rounded",probabilities)
-        #probabilities = dict(sorted(probabilities.items(), key=lambda item: item[1], reverse=True))
-        #print(codes, probs)
-        # here it is needed to record also confidence values and then cut-off low confidences in analysis later
-        # record first item in dict (label+probability value)
-        # with open(os.path.join(args.output_dir, 'predictions.jsonl'), 'w') as fout:
-        #     for i, example in enumerate(data_module['predict_dataset']):
-        #         example['prediction_with_input'] = predictions[i].strip()
-        #         example['prediction'] = predictions[i].replace(example['input'], '').strip()
-        #         fout.write(json.dumps(example) + '\n')
         df = pd.DataFrame({"codes":codes,"probs":probs})
         print(df.head())
         df.to_parquet(args.predict_dataset+"predictions.parquet",compression="zstd")
