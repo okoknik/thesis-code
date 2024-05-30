@@ -1,5 +1,5 @@
 # Description
-Code for my Master thesis in Political Science with focus on Computational Social Science at the University of Bamberg. It fine-tunes a XLM-R model using the PEFT-technique [AdaLoRa](https://arxiv.org/abs/2303.10512) on party manifesto data. The training data can be obtained from the Manifesto Project. After training, the model can be used to predict Comparative Agenda Project classes in parliamentary speech.
+Code for my Master thesis in Political Science with focus on Computational Social Science at the University of Bamberg. It fine-tunes a XLM-R model using the PEFT-technique [AdaLoRa](https://arxiv.org/abs/2303.10512) on party manifesto data. The training data can be obtained from the [Comparative Agenda Project](https://www.comparativeagendas.net/datasets_codebooks). After training, the model can be used to predict Comparative Agenda Project classes in parliamentary speech.
 
 ## Usage
 It is recommended to build your own Docker-Image to use the model. Clone the repo and build the image using the following command:
